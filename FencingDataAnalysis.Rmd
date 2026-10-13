@@ -1,0 +1,132 @@
+---
+title: "2024 NCAA Fencing National Championship Data"
+author: "Erin Santos"
+date: "2025-10-30"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Load packages
+
+```{r}
+library(tidyverse)
+library(effectsize)
+```
+
+# Read data
+```{r}
+df <- read_csv("NCAAfencing.csv", show_col_types = FALSE)
+
+```
+
+# Preview structure
+
+```{r}
+glimpse(df)
+
+```
+
+#-----------------------------------------------
+# 1. Descriptive statistics by Ivy status
+#-----------------------------------------------
+```{r}
+df %>%
+  group_by(Ivy) %>%
+  summarize(
+    n = n(),
+    mean_victories = mean(Victories),
+    sd_victories = sd(Victories),
+    mean_pct = mean(Pct),
+    mean_ind = mean(Ind)
+  )
+```
+
+
+#-----------------------------------------------
+# 2. Boxplot comparison of Victories
+#-----------------------------------------------
+
+```{r}
+ggplot(df, aes(x = Ivy, y = Victories, fill = Ivy)) +
+  geom_boxplot(alpha = 0.6) +
+  geom_violin(alpha = 0.2) +
+  labs(title = "Distribution of Victories by Ivy Status",
+       x = "Ivy Status", y = "Victories") +
+  theme_minimal()
+```
+
+#-----------------------------------------------
+# 3. Test difference in mean Victories
+#-----------------------------------------------
+```{r}
+t.test(Victories ~ Ivy, data = df)
+```
+
+
+#-----------------------------------------------
+# 4. Effect size (Cohen’s d)
+#-----------------------------------------------
+
+```{r}
+cohens_d(Victories ~ Ivy, data = df)
+```
+
+#-----------------------------------------------
+# 5. Regression controlling for performance metric
+#-----------------------------------------------
+
+```{r}
+model1 <- lm(Victories ~ Ind + Ivy, data = df)
+summary(model1)
+```
+
+# Interaction: does the Ind–Victories relationship differ by Ivy status?
+
+```{r}
+model2 <- lm(Victories ~ Ind * Ivy, data = df)
+anova(model1, model2)
+```
+
+
+#-----------------------------------------------
+# 6. Visualize regression by Ivy group
+#-----------------------------------------------
+
+```{r}
+ggplot(df, aes(x = Ind, y = Victories, color = Ivy)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE) +
+  labs(title = "Victories vs Indicator Score by Ivy Status",
+       x = "Indicator Score (Ind)", y = "Victories") +
+  theme_minimal()
+```
+
+
+#-----------------------------------------------
+# 7. Rank-based comparison using Place
+#-----------------------------------------------
+
+```{r}
+df <- df %>%
+  mutate(Percentile = 100 * (1 - Place / max(Place)))
+
+t.test(Percentile ~ Ivy, data = df)
+```
+
+#-----------------------------------------------
+# 8. Correlation structure within Ivy groups
+#-----------------------------------------------
+```{r}
+df %>%
+  group_by(Ivy) %>%
+  summarize(
+    corr_ind_vic = cor(Ind, Victories),
+    corr_ts_tr = cor(TS, TR)
+  )
+```
+
+
+
